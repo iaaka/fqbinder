@@ -27,6 +27,7 @@ class HashSeqFixer implements SeqFixer{
 	
 	public HashSeqFixer(String whitelistPath,char[] alphabet,int maxMism) throws Exception {
 		map = new HashMap<>();
+		HashSet<String> blacklist = new HashSet<>();            // to keep sequences that can be fixed to more than one whitelisted barcode 
 		BufferedReader br = new BufferedReader(new FileReader(new File(whitelistPath)));
 		for(String l = br.readLine();l!=null;l = br.readLine()) {
 			HashMap<String,Integer> mseqs = new HashMap<>();	// final list of mutants
@@ -47,10 +48,16 @@ class HashSeqFixer implements SeqFixer{
 			
 			
 			for(String s : mseqs.keySet()) {
-				FixedSeq r = map.put(s, new FixedSeq(l,mseqs.get(s)));
-				if(r!=null) {
-					br.close();
-					throw new Exception("Whitelist sequence '"+l+"' and '"+r.seq+"' clashes." );
+				if(!blacklist.contains(s)) {
+					FixedSeq r = map.put(s, new FixedSeq(l,mseqs.get(s)));
+					if(r!=null) {
+						// add sequence to blacklist and remove from map if is is ambiguous
+						blacklist.add(s);
+						map.remove(s);
+						// other option is to die...
+						//br.close();
+						//throw new Exception("Whitelist sequence '"+l+"' and '"+r.seq+"' clashes." );
+					}
 				}
 			}
 		}
